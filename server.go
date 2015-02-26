@@ -1,126 +1,49 @@
 package socket
 
-import (
-	"encoding/json"
-	"errors"
-	"log"
-	"net/http"
-
-	"github.com/gorilla/websocket"
-)
-
-type actionspace struct {
-	actions map[string]*caller
-}
-
-func newActionSpace() *actionspace {
-	return &actionspace{
-		actions: make(map[string]*caller),
-	}
-}
-
-type Socket struct {
-	*actionspace
-	conn *websocket.Conn
-}
-
-func newSocket(conn *websocket.Conn) *Socket {
-	return &Socket{
-		actionspace: newActionSpace(),
-		conn:        conn,
-	}
-}
+import "net/http"
 
 type Server struct {
-	*actionspace
-	onConnect    func(s *Socket)
-	onDisconnect func(s *Socket)
+	Namespace
 }
 
 func NewServer() *Server {
 	return &Server{
-		actionspace: newActionSpace(),
+		Namespace: newNamespace(""),
 	}
-}
-
-type inFrame struct {
-	Namespace string            `json:"namespace"`
-	Event     string            `json:"event"`
-	Args      []json.RawMessage `json:"args"`
-}
-
-type outFrame struct {
-	Namespace string        `json:"namespace"`
-	Event     string        `json:"event"`
-	Args      []interface{} `json:"args"`
-}
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+	t, err := newWSTransport(w, r)
 	if err != nil {
-		log.Println(err)
 		return
 	}
-	so := newSocket(conn)
-	if s.onConnect != nil {
-		s.onConnect(so)
-	}
+
+	sockets := make(map[string]map[string]struct{})
 
 	for {
-		var f *inFrame
-		if err := conn.ReadJSON(&f); err != nil {
-			if s.onDisconnect != nil {
-				s.onDisconnect(so)
-			}
-			return
+		p, err := t.NextPacket()
+		if err != nil {
+			break
 		}
 
-		so.actionspace.on(f)
-	}
-}
-
-func (s *Server) On(event string, fn interface{}) (err error) {
-	switch event {
-	case "connection":
-		if sofn, ok := fn.(func(so *Socket)); ok {
-			s.onConnect = sofn
-		} else {
-			err = errors.New("connection fn must meet: func(*socket.Socket)")
+		ns, ok := sockets[p.Namespace()]
+		if !ok {
+			ns = make(map[string]struct{})
+			sockets[p.Namespace()] = ns
 		}
+		ns[p.Socket()] = struct{}{}
 
-	case "disconnection":
-		if sofn, ok := fn.(func(so *Socket)); ok {
-			s.onDisconnect = sofn
-		} else {
-			err = errors.New("disconnection fn must meet: func(*socket.Socket)")
+		s.OnPacket(p)
+	}
+
+	for ns := range sockets {
+		for so := range sockets[ns] {
+			s.OnPacket(&packet{
+				transport: t,
+				namespace: ns,
+				socket:    so,
+				event:     DISCONNECTION,
+			})
 		}
-
-	default:
-		err = s.actionspace.On(event, fn)
 	}
-	return err
-}
-
-func (s *actionspace) On(event string, fn interface{}) (err error) {
-	s.actions[event], err = newCaller(fn, json.Unmarshal)
-	return err
-}
-
-func (s *actionspace) on(f *inFrame) {
-	if c, ok := s.actions[f.Event]; ok {
-		c.Call(f.Args)
-	}
-}
-
-func (s *Socket) Emit(event string, args ...interface{}) error {
-	return s.conn.WriteJSON(&outFrame{
-		Namespace: "test",
-		Event:     event,
-		Args:      args,
-	})
 }

@@ -14,17 +14,17 @@ type Message struct {
 func main() {
 	server := socket.NewServer()
 
-	server.On("connection", func(so *socket.Socket) {
-		so.Emit("test", 1, 2, 3)
-		so.Emit("test", 3, 3, 3)
-
-		so.On("test", func(msg *Message) {
-			fmt.Println(msg.Test)
+	server.Of("/views").On(socket.CONNECTION, func(so *socket.Socket) {
+		so.Join("group")
+		so.To("group").Emit("hello", so.Id())
+		so.On("echo", func(msg string) {
+			fmt.Println("echo")
+			so.To("group").Emit("hello", msg)
 		})
 	})
 
-	server.On("disconnection", func(so *socket.Socket) {
-		fmt.Println("broken")
+	server.Of("/views").On(socket.DISCONNECTION, func(so *socket.Socket) {
+		fmt.Println("DISCONNECTED")
 	})
 
 	router := http.NewServeMux()

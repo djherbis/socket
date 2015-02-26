@@ -6,13 +6,10 @@
   <body>
     <script src="socket.js"></script>
     <script>
-      var socket = io("localhost/socket");
-      socket.emit("test", {test: "stuff"});
-      socket.on("test", function(a, b, c) {
-        console.log(a+b+c);
-      });
-      socket.on("disconnect", function(){
-        console.log("broken");
+      var socket = io("localhost/views");
+      socket.emit("echo", "hey everyone!");
+      socket.on("hello", function(msg){
+        console.log(msg);
       });
     </script>
   </body>

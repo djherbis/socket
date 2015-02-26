@@ -1,20 +1,16 @@
 package socket
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 )
 
-type decoderFunc func([]byte, interface{}) error
-
 type caller struct {
-	Func    reflect.Value
-	Args    []reflect.Type
-	Decoder decoderFunc
+	Func reflect.Value
+	Args []reflect.Type
 }
 
-func newCaller(f interface{}, dec decoderFunc) (*caller, error) {
+func newPacketHandler(f interface{}) (*caller, error) {
 	fv := reflect.ValueOf(f)
 	if fv.Kind() != reflect.Func {
 		return nil, fmt.Errorf("f is not func")
@@ -30,13 +26,12 @@ func newCaller(f interface{}, dec decoderFunc) (*caller, error) {
 		args[i] = ft.In(i)
 	}
 	return &caller{
-		Func:    fv,
-		Args:    args,
-		Decoder: dec,
+		Func: fv,
+		Args: args,
 	}, nil
 }
 
-func (c *caller) GetArgs() []interface{} {
+func (c *caller) getArgs() []interface{} {
 	ret := make([]interface{}, len(c.Args))
 	for i, argT := range c.Args {
 		if argT.Kind() == reflect.Ptr {
@@ -48,17 +43,7 @@ func (c *caller) GetArgs() []interface{} {
 	return ret
 }
 
-func (c *caller) decodeArgs(rargs []json.RawMessage, args []interface{}) {
-	for i, _ := range args {
-		if err := c.Decoder(rargs[i], &args[i]); err != nil {
-			return
-		}
-	}
-}
-
-func (c *caller) Call(rargs []json.RawMessage) []reflect.Value {
-	args := c.GetArgs()
-	c.decodeArgs(rargs, args)
+func (c *caller) call(args ...interface{}) {
 	a := make([]reflect.Value, len(args))
 	for i, arg := range args {
 		v := reflect.ValueOf(arg)
@@ -72,5 +57,11 @@ func (c *caller) Call(rargs []json.RawMessage) []reflect.Value {
 		a[i] = v
 	}
 
-	return c.Func.Call(a)
+	c.Func.Call(a)
+}
+
+func (c *caller) OnPacket(p Packet) {
+	args := c.getArgs()
+	p.DecodeArgs(args...)
+	c.call(args...)
 }

@@ -1,8 +1,18 @@
 io = function(host){
   if ("WebSocket" in window) {
-    var socket = new WebSocket("ws://"+host);
+    var parts = host.split("/");
+    var ns = "/"+parts.slice(1).join("/");
+    var url = "ws://"+parts[0]+"/socket";
+    var socket = new WebSocket(url);
     socket.actions = {};
     socket.pending = [];
+
+    // extend this for sub-namespaces
+    socket.namespace = ns;
+    var buf = new Uint8Array(32);
+    window.crypto.getRandomValues(buf);
+    socket.id = btoa(String.fromCharCode.apply(null, buf));
+    console.log(socket.id);
 
     socket.on = function(event, fn){
       socket.actions[event] = fn;
@@ -22,12 +32,16 @@ io = function(host){
       socket.emit = function(event){
         var obj = arguments;
         var args = Object.keys(obj).map(function (key) {return obj[key]});
+        args = args.slice(1);
         socket.send(JSON.stringify({
-          namespace: "ms",
+          namespace: socket.namespace,
+          socket: socket.id,
           event: event,
-          args: args.slice(1)
+          args: args
         }));
       };
+
+      socket.emit("connection");
 
       while(socket.pending.length > 0) {
         socket.pending.shift()();
