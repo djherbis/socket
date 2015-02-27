@@ -1,5 +1,7 @@
 package socket
 
+import "net/http"
+
 type Socket struct {
 	id string
 	ns Namespace
@@ -32,6 +34,10 @@ func (s *Socket) To(room string) Emitter {
 	return s.ns.Room(room)
 }
 
-func (s *Socket) Emit(event string, args ...interface{}) {
-	s.t.Send(s.ns.Name(), s.Id(), event, args...)
+func (s *Socket) Emit(event string, args ...interface{}) error {
+	return s.t.Send(s.ns.Name(), s.Id(), event, args...)
+}
+
+func (s *Socket) Request() *http.Request {
+	return s.t.Request()
 }

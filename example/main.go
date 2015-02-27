@@ -14,16 +14,19 @@ type Message struct {
 func main() {
 	server := socket.NewServer()
 
-	server.Of("/views").On(socket.CONNECTION, func(so *socket.Socket) {
+	server.Of("/views").On(socket.Connection, func(so *socket.Socket) {
 		so.Join("group")
 		so.To("group").Emit("hello", so.Id())
 		so.On("echo", func(msg string) {
 			fmt.Println("echo")
 			so.To("group").Emit("hello", msg)
 		})
+		so.On("disconnect", func() {
+			fmt.Println("hello")
+		})
 	})
 
-	server.Of("/views").On(socket.DISCONNECTION, func(so *socket.Socket) {
+	server.Of("/views").On(socket.Disconnection, func(so *socket.Socket) {
 		fmt.Println("DISCONNECTED")
 	})
 

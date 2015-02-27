@@ -31,8 +31,8 @@ func newNamespace(name string) *namespace {
 		EventHandler: newHandler(),
 	}
 
-	ns.EventHandler.Handle(CONNECTION, &connecter{namespace: ns})
-	ns.EventHandler.Handle(DISCONNECTION, &disconnecter{namespace: ns})
+	ns.EventHandler.Handle(Connection, &connecter{namespace: ns})
+	ns.EventHandler.Handle(Disconnection, &disconnecter{namespace: ns})
 
 	return ns
 }
@@ -64,10 +64,8 @@ func (ns *namespace) Of(name string) Namespace {
 var ErrNotSocketFunc = errors.New("connection/disconnection must take fn of type func(*Socket)")
 
 func (ns *namespace) On(event string, fn interface{}) error {
-	ns.mu.Lock()
-	defer ns.mu.Unlock()
 	switch event {
-	case CONNECTION:
+	case Connection:
 		sfn, ok := fn.(func(*Socket))
 
 		if !ok {
@@ -79,7 +77,7 @@ func (ns *namespace) On(event string, fn interface{}) error {
 			fn:        sfn,
 		})
 
-	case DISCONNECTION:
+	case Disconnection:
 		sfn, ok := fn.(func(*Socket))
 
 		if !ok {
@@ -115,8 +113,8 @@ func (ns *namespace) OnPacket(p Packet) {
 	}
 }
 
-func (ns *namespace) Emit(event string, args ...interface{}) {
-	ns.Room("").Emit(event, args...)
+func (ns *namespace) Emit(event string, args ...interface{}) error {
+	return ns.Room("").Emit(event, args...)
 }
 
 type connecter struct {
@@ -156,6 +154,12 @@ func (c *disconnecter) OnPacket(p Packet) {
 
 		if c.fn != nil {
 			c.fn(so)
+			so.OnPacket(&packet{
+				transport: so.t,
+				namespace: c.namespace.Name(),
+				socket:    so.Id(),
+				event:     Disconnect,
+			})
 		}
 	}
 }

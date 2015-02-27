@@ -7,8 +7,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const CONNECTION = "connection"
-const DISCONNECTION = "disconnection"
+const Connection = "connection"
+const Disconnection = "disconnection"
+const Disconnect = "disconnect"
 
 type Packet interface {
 	Transport() Transport
@@ -81,6 +82,9 @@ func (p *packet) Socket() string       { return p.socket }
 func (p *packet) Event() string        { return p.event }
 func (p *packet) DecodeArgs(args ...interface{}) {
 	for i, _ := range args {
+		if i >= len(p.args) {
+			return
+		}
 		if err := p.decode(p.args[i], &args[i]); err != nil {
 			return
 		}

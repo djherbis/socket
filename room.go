@@ -3,7 +3,7 @@ package socket
 import "sync"
 
 type Emitter interface {
-	Emit(string, ...interface{})
+	Emit(string, ...interface{}) error
 }
 
 type Room interface {
@@ -50,12 +50,15 @@ func (r *room) Size() int {
 	return len(r.sockets)
 }
 
-func (r *room) Emit(event string, args ...interface{}) {
+func (r *room) Emit(event string, args ...interface{}) (err error) {
 	r.RLock()
 	defer r.RUnlock()
 	for s, _ := range r.sockets {
-		s.Emit(event, args...)
+		if er := s.Emit(event, args...); er != nil {
+			err = err
+		}
 	}
+	return err
 }
 
 func (r *room) OnPacket(p Packet) {
