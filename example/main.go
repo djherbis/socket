@@ -27,7 +27,7 @@ func main() {
 	})
 
 	server.Of("/views").On(socket.Disconnection, func(so *socket.Socket) {
-		fmt.Println("DISCONNECTED")
+		so.To("group").Emit("hello", "goodbye!")
 	})
 
 	router := http.NewServeMux()

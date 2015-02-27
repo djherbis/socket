@@ -148,8 +148,8 @@ func (c *disconnecter) OnPacket(p Packet) {
 	c.namespace.mu.Unlock()
 
 	if ok {
-		for _, room := range c.namespace.rooms {
-			room.Leave(so)
+		for _, room := range so.Rooms() {
+			c.namespace.Room(room).Leave(so)
 		}
 
 		if c.fn != nil {
