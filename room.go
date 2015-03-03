@@ -2,10 +2,6 @@ package socket
 
 import "sync"
 
-type Emitter interface {
-	Emit(string, ...interface{}) error
-}
-
 type Room interface {
 	Name() string
 	Size() int

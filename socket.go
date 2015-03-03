@@ -6,6 +6,10 @@ import (
 	"sync"
 )
 
+type Emitter interface {
+	Emit(string, ...interface{}) error
+}
+
 type Socket interface {
 	Id() string
 	Namespace() string
@@ -21,7 +25,7 @@ type socket struct {
 	mu sync.RWMutex
 	id string
 	ns Namespace
-	EventHandler
+	Handler
 	t            Transport
 	rooms        map[string]struct{}
 	onDisconnect func()
@@ -29,11 +33,11 @@ type socket struct {
 
 func newSocket(ns Namespace, p Packet) *socket {
 	return &socket{
-		id:           p.Socket(),
-		EventHandler: newHandler(),
-		ns:           ns,
-		t:            p.Transport(),
-		rooms:        make(map[string]struct{}),
+		id:      p.Socket(),
+		Handler: newHandler(),
+		ns:      ns,
+		t:       p.Transport(),
+		rooms:   make(map[string]struct{}),
 	}
 }
 
@@ -92,7 +96,7 @@ func (s *socket) On(event string, fn interface{}) error {
 		return nil
 
 	default:
-		return s.EventHandler.On(event, fn)
+		return s.Handler.On(event, fn)
 	}
 }
 

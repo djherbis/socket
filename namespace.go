@@ -20,14 +20,14 @@ type namespace struct {
 	rooms        map[string]Room
 	onConnect    func(Socket)
 	onDisconnect func(Socket)
-	EventHandler
+	Handler
 }
 
 func newNamespace(name string) *namespace {
 	return &namespace{
-		name:         name,
-		rooms:        make(map[string]Room),
-		EventHandler: newHandler(),
+		name:    name,
+		rooms:   make(map[string]Room),
+		Handler: newHandler(),
 	}
 }
 
@@ -69,7 +69,7 @@ func (ns *namespace) On(event string, fn interface{}) error {
 		ns.mu.Unlock()
 
 	default:
-		return ns.EventHandler.On(event, fn)
+		return ns.Handler.On(event, fn)
 	}
 
 	return nil

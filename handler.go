@@ -8,6 +8,10 @@ type PacketHandler interface {
 
 type EventHandler interface {
 	On(string, interface{}) error
+}
+
+type Handler interface {
+	EventHandler
 	PacketHandler
 }
 
@@ -16,7 +20,7 @@ type handler struct {
 	events map[string]PacketHandler
 }
 
-func newHandler() EventHandler {
+func newHandler() Handler {
 	return &handler{
 		events: make(map[string]PacketHandler),
 	}
