@@ -96,7 +96,6 @@ func (ns *namespace) removeSocket(so Socket) {
 	fn := ns.onDisconnect
 	ns.mu.RUnlock()
 
-	ns.Room("").Leave(so)
 	if fn != nil {
 		fn(so)
 	}
