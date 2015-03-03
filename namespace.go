@@ -85,7 +85,8 @@ func (ns *namespace) addSocket(so Socket) {
 	ns.mu.RUnlock()
 
 	if fn != nil {
-		ns.Room("").Join(so)
+		so.Join("")
+		so.Join(so.Id())
 		fn(so)
 	}
 }
