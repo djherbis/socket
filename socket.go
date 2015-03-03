@@ -24,19 +24,19 @@ type Socket interface {
 type socket struct {
 	mu sync.RWMutex
 	id string
-	ns Namespace
+	ns socketNamespace
 	Handler
 	t            Transport
 	rooms        map[string]struct{}
 	onDisconnect func()
 }
 
-func newSocket(ns Namespace, p Packet) *socket {
+func newSocket(ns socketNamespace, id string, t Transport) *socket {
 	return &socket{
-		id:      p.Socket(),
+		id:      id,
 		Handler: newHandler(),
 		ns:      ns,
-		t:       p.Transport(),
+		t:       t,
 		rooms:   make(map[string]struct{}),
 	}
 }

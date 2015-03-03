@@ -53,7 +53,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ns := s.ns(p.Namespace())
 		so, ok := sockets[p.Socket()]
 		if !ok {
-			so = newSocket(ns, p)
+			so = newSocket(ns, p.Socket(), p.Transport())
 			ns.addSocket(so)
 			sockets[so.Id()] = so
 		}

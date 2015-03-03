@@ -7,9 +7,13 @@ import (
 
 var ErrNotSocketFunc = errors.New("connection/disconnection must take fn of type func(Socket)")
 
-type Namespace interface {
+type socketNamespace interface {
 	Name() string
 	Room(string) Room
+}
+
+type Namespace interface {
+	socketNamespace
 	EventHandler
 	Emitter
 }

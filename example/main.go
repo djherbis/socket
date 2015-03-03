@@ -31,6 +31,17 @@ func main() {
 		so.To("group").Emit("goodbye", so.Id())
 	})
 
+	go func() {
+		if so, err := socket.New("localhost/views"); err == nil {
+			so.Emit("hey", ":)")
+			so.On("hello", func(msg string) {
+				fmt.Println(msg, ": hello")
+			})
+		} else {
+			fmt.Println(err.Error())
+		}
+	}()
+
 	router := http.NewServeMux()
 	router.Handle("/socket", server)
 	router.Handle("/", http.FileServer(http.Dir(".")))
