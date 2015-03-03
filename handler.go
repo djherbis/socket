@@ -8,7 +8,6 @@ type PacketHandler interface {
 
 type EventHandler interface {
 	On(string, interface{}) error
-	Handle(string, PacketHandler)
 	PacketHandler
 }
 
@@ -21,12 +20,6 @@ func newHandler() EventHandler {
 	return &handler{
 		events: make(map[string]PacketHandler),
 	}
-}
-
-func (h *handler) Handle(event string, c PacketHandler) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.events[event] = c
 }
 
 func (h *handler) On(event string, fn interface{}) (err error) {
