@@ -5,7 +5,17 @@ import (
 	"sync"
 )
 
-type Socket struct {
+type Socket interface {
+	Id() string
+	Join(string)
+	Leave(string)
+	Rooms() []string
+	To(string) Emitter
+	EventHandler
+	Emitter
+}
+
+type socket struct {
 	mu sync.RWMutex
 	id string
 	ns Namespace
@@ -14,8 +24,8 @@ type Socket struct {
 	rooms map[string]struct{}
 }
 
-func newSocket(ns Namespace, p Packet) *Socket {
-	return &Socket{
+func newSocket(ns Namespace, p Packet) Socket {
+	return &socket{
 		id:           p.Socket(),
 		EventHandler: newHandler(),
 		ns:           ns,
@@ -24,9 +34,9 @@ func newSocket(ns Namespace, p Packet) *Socket {
 	}
 }
 
-func (s *Socket) Id() string { return s.id }
+func (s *socket) Id() string { return s.id }
 
-func (s *Socket) Join(room string) {
+func (s *socket) Join(room string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.rooms[room] = struct{}{}
@@ -34,7 +44,7 @@ func (s *Socket) Join(room string) {
 }
 
 // TODO drop room on empty
-func (s *Socket) Leave(room string) {
+func (s *socket) Leave(room string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.rooms, room)
@@ -42,19 +52,19 @@ func (s *Socket) Leave(room string) {
 }
 
 // TODO drop room on empty
-func (s *Socket) To(room string) Emitter {
+func (s *socket) To(room string) Emitter {
 	return s.ns.Room(room)
 }
 
-func (s *Socket) Emit(event string, args ...interface{}) error {
+func (s *socket) Emit(event string, args ...interface{}) error {
 	return s.t.Send(s.ns.Name(), s.Id(), event, args...)
 }
 
-func (s *Socket) Request() *http.Request {
+func (s *socket) Request() *http.Request {
 	return s.t.Request()
 }
 
-func (s *Socket) Rooms() (rooms []string) {
+func (s *socket) Rooms() (rooms []string) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for room, _ := range s.rooms {

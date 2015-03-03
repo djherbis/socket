@@ -16,7 +16,7 @@ type Namespace interface {
 type namespace struct {
 	mu        sync.RWMutex
 	name      string
-	sockets   map[string]*Socket
+	sockets   map[string]Socket
 	subspaces map[string]*namespace
 	rooms     map[string]Room
 	EventHandler
@@ -25,7 +25,7 @@ type namespace struct {
 func newNamespace(name string) *namespace {
 	ns := &namespace{
 		name:         name,
-		sockets:      make(map[string]*Socket),
+		sockets:      make(map[string]Socket),
 		subspaces:    make(map[string]*namespace),
 		rooms:        make(map[string]Room),
 		EventHandler: newHandler(),
@@ -61,12 +61,12 @@ func (ns *namespace) Of(name string) Namespace {
 	return subns
 }
 
-var ErrNotSocketFunc = errors.New("connection/disconnection must take fn of type func(*Socket)")
+var ErrNotSocketFunc = errors.New("connection/disconnection must take fn of type func(Socket)")
 
 func (ns *namespace) On(event string, fn interface{}) error {
 	switch event {
 	case Connection:
-		sfn, ok := fn.(func(*Socket))
+		sfn, ok := fn.(func(Socket))
 
 		if !ok {
 			return ErrNotSocketFunc
@@ -78,7 +78,7 @@ func (ns *namespace) On(event string, fn interface{}) error {
 		})
 
 	case Disconnection:
-		sfn, ok := fn.(func(*Socket))
+		sfn, ok := fn.(func(Socket))
 
 		if !ok {
 			return ErrNotSocketFunc
@@ -119,7 +119,7 @@ func (ns *namespace) Emit(event string, args ...interface{}) error {
 
 type connecter struct {
 	*namespace
-	fn func(*Socket)
+	fn func(Socket)
 }
 
 func (c *connecter) OnPacket(p Packet) {
@@ -136,7 +136,7 @@ func (c *connecter) OnPacket(p Packet) {
 
 type disconnecter struct {
 	*namespace
-	fn func(*Socket)
+	fn func(Socket)
 }
 
 func (c *disconnecter) OnPacket(p Packet) {
@@ -155,7 +155,6 @@ func (c *disconnecter) OnPacket(p Packet) {
 		if c.fn != nil {
 			c.fn(so)
 			so.OnPacket(&packet{
-				transport: so.t,
 				namespace: c.namespace.Name(),
 				socket:    so.Id(),
 				event:     Disconnect,

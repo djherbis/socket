@@ -14,7 +14,7 @@ type Message struct {
 func main() {
 	server := socket.NewServer()
 
-	server.Of("/views").On(socket.Connection, func(so *socket.Socket) {
+	server.Of("/views").On(socket.Connection, func(so socket.Socket) {
 		so.Join("group")
 		so.To("group").Emit("hello", so.Id())
 		so.On("echo", func(msg string) {
@@ -26,7 +26,7 @@ func main() {
 		})
 	})
 
-	server.Of("/views").On(socket.Disconnection, func(so *socket.Socket) {
+	server.Of("/views").On(socket.Disconnection, func(so socket.Socket) {
 		so.To("group").Emit("hello", "goodbye!")
 	})
 

@@ -9,8 +9,8 @@ type Emitter interface {
 type Room interface {
 	Name() string
 	Size() int
-	Join(so *Socket)
-	Leave(so *Socket)
+	Join(so Socket)
+	Leave(so Socket)
 	PacketHandler
 	Emitter
 }
@@ -18,13 +18,13 @@ type Room interface {
 type room struct {
 	sync.RWMutex
 	name    string
-	sockets map[*Socket]struct{}
+	sockets map[Socket]struct{}
 }
 
 func newRoom(name string) Room {
 	return &room{
 		name:    name,
-		sockets: make(map[*Socket]struct{}),
+		sockets: make(map[Socket]struct{}),
 	}
 }
 
@@ -32,13 +32,13 @@ func (r *room) Name() string {
 	return r.name
 }
 
-func (r *room) Join(so *Socket) {
+func (r *room) Join(so Socket) {
 	r.Lock()
 	defer r.Unlock()
 	r.sockets[so] = struct{}{}
 }
 
-func (r *room) Leave(so *Socket) {
+func (r *room) Leave(so Socket) {
 	r.Lock()
 	defer r.Unlock()
 	delete(r.sockets, so)

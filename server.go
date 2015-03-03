@@ -18,7 +18,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sockets := make(map[string]map[string]struct{})
+	sockets := newSocketSet()
 
 	for {
 		p, err := t.NextPacket()
@@ -26,24 +26,41 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		ns, ok := sockets[p.Namespace()]
-		if !ok {
-			ns = make(map[string]struct{})
-			sockets[p.Namespace()] = ns
-		}
-		ns[p.Socket()] = struct{}{}
-
+		sockets.add(p)
 		s.OnPacket(p)
 	}
 
-	for ns := range sockets {
-		for so := range sockets[ns] {
-			s.OnPacket(&packet{
-				transport: t,
-				namespace: ns,
-				socket:    so,
-				event:     Disconnection,
-			})
+	sockets.forEach(func(namespace, socketId string) {
+		s.OnPacket(&packet{
+			transport: t,
+			namespace: namespace,
+			socket:    socketId,
+			event:     Disconnection,
+		})
+	})
+}
+
+type socketSet struct {
+	sockets map[string]map[string]struct{}
+}
+
+func newSocketSet() *socketSet {
+	return &socketSet{sockets: make(map[string]map[string]struct{})}
+}
+
+func (s *socketSet) add(p Packet) {
+	ns, ok := s.sockets[p.Namespace()]
+	if !ok {
+		ns = make(map[string]struct{})
+		s.sockets[p.Namespace()] = ns
+	}
+	ns[p.Socket()] = struct{}{}
+}
+
+func (s *socketSet) forEach(fn func(string, string)) {
+	for ns := range s.sockets {
+		for so := range s.sockets[ns] {
+			fn(ns, so)
 		}
 	}
 }
