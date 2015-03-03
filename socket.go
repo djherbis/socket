@@ -17,6 +17,7 @@ type Socket interface {
 	Leave(string)
 	Rooms() []string
 	To(string) Emitter
+	Request() *http.Request
 	EventHandler
 	Emitter
 }

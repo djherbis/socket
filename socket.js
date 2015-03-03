@@ -12,7 +12,6 @@ io = function(host){
     var buf = new Uint8Array(32);
     window.crypto.getRandomValues(buf);
     socket.id = btoa(String.fromCharCode.apply(null, buf));
-    console.log(socket.id);
 
     socket.on = function(event, fn){
       socket.actions[event] = fn;
