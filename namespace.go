@@ -5,37 +5,33 @@ import (
 	"sync"
 )
 
+var ErrNotSocketFunc = errors.New("connection/disconnection must take fn of type func(Socket)")
+
 type Namespace interface {
 	Name() string
-	Of(name string) Namespace
 	Room(string) Room
 	EventHandler
 	Emitter
 }
 
 type namespace struct {
-	mu        sync.RWMutex
-	name      string
-	sockets   map[string]Socket
-	subspaces map[string]*namespace
-	rooms     map[string]Room
+	mu           sync.RWMutex
+	name         string
+	rooms        map[string]Room
+	onConnect    func(Socket)
+	onDisconnect func(Socket)
 	EventHandler
 }
 
 func newNamespace(name string) *namespace {
-	ns := &namespace{
+	return &namespace{
 		name:         name,
-		sockets:      make(map[string]Socket),
-		subspaces:    make(map[string]*namespace),
 		rooms:        make(map[string]Room),
 		EventHandler: newHandler(),
 	}
-
-	ns.EventHandler.Handle(Connection, &connecter{namespace: ns})
-	ns.EventHandler.Handle(Disconnection, &disconnecter{namespace: ns})
-
-	return ns
 }
+
+func (ns *namespace) Name() string { return ns.name }
 
 func (ns *namespace) Room(name string) Room {
 	ns.mu.Lock()
@@ -48,21 +44,6 @@ func (ns *namespace) Room(name string) Room {
 	return room
 }
 
-func (ns *namespace) Name() string { return ns.name }
-
-func (ns *namespace) Of(name string) Namespace {
-	ns.mu.Lock()
-	defer ns.mu.Unlock()
-	if nsp, ok := ns.subspaces[name]; ok {
-		return nsp
-	}
-	subns := newNamespace(name)
-	ns.subspaces[name] = subns
-	return subns
-}
-
-var ErrNotSocketFunc = errors.New("connection/disconnection must take fn of type func(Socket)")
-
 func (ns *namespace) On(event string, fn interface{}) error {
 	switch event {
 	case Connection:
@@ -72,10 +53,9 @@ func (ns *namespace) On(event string, fn interface{}) error {
 			return ErrNotSocketFunc
 		}
 
-		ns.EventHandler.Handle(event, &connecter{
-			namespace: ns,
-			fn:        sfn,
-		})
+		ns.mu.Lock()
+		ns.onConnect = sfn
+		ns.mu.Unlock()
 
 	case Disconnection:
 		sfn, ok := fn.(func(Socket))
@@ -84,10 +64,9 @@ func (ns *namespace) On(event string, fn interface{}) error {
 			return ErrNotSocketFunc
 		}
 
-		ns.EventHandler.Handle(event, &disconnecter{
-			namespace: ns,
-			fn:        sfn,
-		})
+		ns.mu.Lock()
+		ns.onDisconnect = sfn
+		ns.mu.Unlock()
 
 	default:
 		return ns.EventHandler.On(event, fn)
@@ -96,69 +75,28 @@ func (ns *namespace) On(event string, fn interface{}) error {
 	return nil
 }
 
-func (ns *namespace) route(name string) (subns *namespace, ok bool) {
-	ns.mu.RLock()
-	defer ns.mu.RUnlock()
-	if name == "" || name == "/" {
-		return ns, true
-	}
-	subns, ok = ns.subspaces[name]
-	return subns, ok
-}
-
-func (ns *namespace) OnPacket(p Packet) {
-	if nsp, ok := ns.route(p.Namespace()); ok {
-		nsp.EventHandler.OnPacket(p)
-		nsp.Room(p.Socket()).OnPacket(p)
-	}
-}
-
 func (ns *namespace) Emit(event string, args ...interface{}) error {
 	return ns.Room("").Emit(event, args...)
 }
 
-type connecter struct {
-	*namespace
-	fn func(Socket)
-}
+func (ns *namespace) addSocket(so Socket) {
+	ns.mu.RLock()
+	fn := ns.onConnect
+	ns.mu.RUnlock()
 
-func (c *connecter) OnPacket(p Packet) {
-	so := newSocket(c.namespace, p)
-	c.namespace.mu.Lock()
-	c.namespace.sockets[so.Id()] = so
-	c.namespace.mu.Unlock()
-	so.Join(so.Id())
-	so.Join("")
-	if c.fn != nil {
-		c.fn(so)
+	if fn != nil {
+		ns.Room("").Join(so)
+		fn(so)
 	}
 }
 
-type disconnecter struct {
-	*namespace
-	fn func(Socket)
-}
+func (ns *namespace) removeSocket(so Socket) {
+	ns.mu.RLock()
+	fn := ns.onDisconnect
+	ns.mu.RUnlock()
 
-func (c *disconnecter) OnPacket(p Packet) {
-	c.namespace.mu.Lock()
-	so, ok := c.namespace.sockets[p.Socket()]
-	if ok {
-		delete(c.namespace.sockets, p.Socket())
-	}
-	c.namespace.mu.Unlock()
-
-	if ok {
-		for _, room := range so.Rooms() {
-			c.namespace.Room(room).Leave(so)
-		}
-
-		if c.fn != nil {
-			c.fn(so)
-			so.OnPacket(&packet{
-				namespace: c.namespace.Name(),
-				socket:    so.Id(),
-				event:     Disconnect,
-			})
-		}
+	ns.Room("").Leave(so)
+	if fn != nil {
+		fn(so)
 	}
 }

@@ -16,18 +16,19 @@ func main() {
 
 	server.Of("/views").On(socket.Connection, func(so socket.Socket) {
 		so.Join("group")
+		fmt.Println(so.Id(), "joined")
 		so.To("group").Emit("hello", so.Id())
-		so.On("echo", func(msg string) {
-			fmt.Println("echo")
-			so.To("group").Emit("hello", msg)
+		so.On("hey", func(msg string) {
+			fmt.Println(so.Id(), msg)
 		})
-		so.On("disconnect", func() {
-			fmt.Println("hello")
+		so.On(socket.Disconnect, func() {
+			fmt.Println(so.Id(), "leaving")
 		})
 	})
 
 	server.Of("/views").On(socket.Disconnection, func(so socket.Socket) {
-		so.To("group").Emit("hello", "goodbye!")
+		fmt.Println(so.Id(), "left")
+		so.To("group").Emit("goodbye", so.Id())
 	})
 
 	router := http.NewServeMux()

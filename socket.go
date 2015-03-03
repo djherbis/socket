@@ -1,12 +1,14 @@
 package socket
 
 import (
+	"errors"
 	"net/http"
 	"sync"
 )
 
 type Socket interface {
 	Id() string
+	Namespace() string
 	Join(string)
 	Leave(string)
 	Rooms() []string
@@ -20,11 +22,12 @@ type socket struct {
 	id string
 	ns Namespace
 	EventHandler
-	t     Transport
-	rooms map[string]struct{}
+	t            Transport
+	rooms        map[string]struct{}
+	onDisconnect func()
 }
 
-func newSocket(ns Namespace, p Packet) Socket {
+func newSocket(ns Namespace, p Packet) *socket {
 	return &socket{
 		id:           p.Socket(),
 		EventHandler: newHandler(),
@@ -35,6 +38,8 @@ func newSocket(ns Namespace, p Packet) Socket {
 }
 
 func (s *socket) Id() string { return s.id }
+
+func (s *socket) Namespace() string { return s.ns.Name() }
 
 func (s *socket) Join(room string) {
 	s.mu.Lock()
@@ -71,4 +76,36 @@ func (s *socket) Rooms() (rooms []string) {
 		rooms = append(rooms, room)
 	}
 	return rooms
+}
+
+func (s *socket) On(event string, fn interface{}) error {
+	switch event {
+	case Disconnect:
+		sfn, ok := fn.(func())
+		if !ok {
+			return errors.New("Disconnect takes a func of type func()")
+		}
+
+		s.mu.Lock()
+		s.onDisconnect = sfn
+		s.mu.Unlock()
+		return nil
+
+	default:
+		return s.EventHandler.On(event, fn)
+	}
+}
+
+func (s *socket) disconnect() {
+	s.mu.RLock()
+	for room, _ := range s.rooms {
+		s.ns.Room(room).Leave(s)
+		delete(s.rooms, room)
+	}
+	fn := s.onDisconnect
+	s.mu.RUnlock()
+
+	if fn != nil {
+		fn()
+	}
 }

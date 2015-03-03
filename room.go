@@ -11,7 +11,6 @@ type Room interface {
 	Size() int
 	Join(so Socket)
 	Leave(so Socket)
-	PacketHandler
 	Emitter
 }
 
@@ -53,18 +52,10 @@ func (r *room) Size() int {
 func (r *room) Emit(event string, args ...interface{}) (err error) {
 	r.RLock()
 	defer r.RUnlock()
-	for s, _ := range r.sockets {
-		if er := s.Emit(event, args...); er != nil {
+	for so, _ := range r.sockets {
+		if er := so.Emit(event, args...); er != nil {
 			err = err
 		}
 	}
 	return err
-}
-
-func (r *room) OnPacket(p Packet) {
-	r.RLock()
-	defer r.RUnlock()
-	for s, _ := range r.sockets {
-		s.OnPacket(p)
-	}
 }

@@ -7,9 +7,12 @@
     <script src="socket.js"></script>
     <script>
       var socket = io("localhost/views");
-      socket.emit("echo", "hey everyone!");
+      socket.emit("hey", ":)");
       socket.on("hello", function(msg){
-        console.log(msg);
+        console.log(msg, ": hello");
+      });
+      socket.on("goodbye", function(msg){
+        console.log(msg, ": goodbye")
       });
     </script>
   </body>
