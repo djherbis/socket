@@ -24,6 +24,7 @@ type Transport interface {
 	Request() *http.Request
 	NextPacket() (Packet, error)
 	Send(string, string, string, ...interface{}) error
+	Close() error
 }
 
 type wsTransport struct {
@@ -87,6 +88,10 @@ func (ws *wsTransport) NextPacket() (Packet, error) {
 		return nil, err
 	}
 	return &f, nil
+}
+
+func (ws *wsTransport) Close() error {
+	return ws.conn.Close()
 }
 
 func (ws *wsTransport) Send(ns, socket, event string, args ...interface{}) error {
