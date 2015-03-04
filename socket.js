@@ -78,7 +78,6 @@ newTransport = function(url){
     }
 
     ws.onopen = function(){
-      console.log("connected");
       transport.duration = 1000;
       for (var i = 0; i < transport.sockets.length; i++){
         transport.sockets[i].connect();
@@ -98,7 +97,6 @@ newTransport = function(url){
     };
 
     ws.onclose = function() {
-      console.log("disconnected");
       for (var i = 0; i < transport.sockets.length; i++) {
         transport.sockets[i].disconnect();
       }
