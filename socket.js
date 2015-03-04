@@ -4,6 +4,10 @@ generateId = function(){
   return btoa(String.fromCharCode.apply(null, buf));
 };
 
+mapValues = function(obj) {
+  return Object.keys(obj).map(function (key) {return obj[key]});
+};
+
 newSocket = function(ns, transport){
   var socket = {
     id: generateId(),
@@ -17,8 +21,7 @@ newSocket = function(ns, transport){
   };
 
   socket.emitLater = function(){
-    var obj = arguments;
-    var args = Object.keys(obj).map(function (key) {return obj[key]});
+    var args = mapValues(arguments);
     socket.pending.push(function(){
       socket.emit.apply(this, args);
     });
@@ -29,7 +32,7 @@ newSocket = function(ns, transport){
     var obj = arguments;
     var args = Object.keys(obj).map(function (key) {return obj[key]});
     args = args.slice(1);
-    transport.send(JSON.stringify({
+    transport.ws.send(JSON.stringify({
       namespace: socket.namespace,
       socket: socket.id,
       event: event,
@@ -61,33 +64,49 @@ newSocket = function(ns, transport){
 };
 
 newTransport = function(url){
-  var transport = new WebSocket(url);
-  transport.sockets = [];
-
-  transport.onopen = function(){
-    for (var i = 0; i < transport.sockets.length; i++){
-      transport.sockets[i].connect();
-    }
+  var transport = {
+    sockets: [],
+    duration: 1000
   };
 
-  transport.onmessage = function(frame){
-    var obj = JSON.parse(frame.data);
-    for (var i = 0; i < transport.sockets.length; i++){
-      if (obj.namespace === "") {
-        obj.namespace = "/";
+  transport.connect = function(){
+    var ws = new WebSocket(url);
+    transport.ws = ws;
+    transport.duration = transport.duration * 2;
+    if (transport.duration > 32000) {
+      transport.duration = 32000;
+    }
+
+    ws.onopen = function(){
+      console.log("connected");
+      transport.duration = 1000;
+      for (var i = 0; i < transport.sockets.length; i++){
+        transport.sockets[i].connect();
       }
-      if (transport.sockets[i].namespace === obj.namespace) {
-        transport.sockets[i].handleEvent(obj.event, obj.args);
-      };
-    }
+    };
+
+    ws.onmessage = function(frame){
+      var obj = JSON.parse(frame.data);
+      for (var i = 0; i < transport.sockets.length; i++){
+        if (obj.namespace === "") {
+          obj.namespace = "/";
+        }
+        if (transport.sockets[i].namespace === obj.namespace) {
+          transport.sockets[i].handleEvent(obj.event, obj.args);
+        };
+      }
+    };
+
+    ws.onclose = function() {
+      console.log("disconnected");
+      for (var i = 0; i < transport.sockets.length; i++) {
+        transport.sockets[i].disconnect();
+      }
+      setTimeout(transport.connect, transport.duration);
+    };
   };
 
-  transport.onclose = function() {
-    for (var i = 0; i < transport.sockets.length; i++) {
-      transport.sockets[i].disconnect();
-    }
-  };
-
+  transport.connect();
   return transport;
 };
 
