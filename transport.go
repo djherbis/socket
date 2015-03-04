@@ -14,7 +14,6 @@ const Disconnection = "disconnection"
 const Disconnect = "disconnect"
 
 type Packet interface {
-	Transport() Transport
 	Namespace() string
 	Socket() string
 	Event() string
@@ -82,72 +81,48 @@ func (ws *wsTransport) Request() *http.Request {
 }
 
 func (ws *wsTransport) NextPacket() (Packet, error) {
-	var f *jsonInFrame
+	var f inPacket
+	f.decode = json.Unmarshal
 	if err := ws.conn.ReadJSON(&f); err != nil {
 		return nil, err
 	}
-	return f.toPacket(ws), nil
+	return &f, nil
 }
 
 func (ws *wsTransport) Send(ns, socket, event string, args ...interface{}) error {
-	return ws.conn.WriteJSON(&jsonOutFrame{
-		Namespace: ns,
-		Socket:    socket,
-		Event:     event,
-		Args:      args,
+	return ws.conn.WriteJSON(&outPacket{
+		N:    ns,
+		S:    socket,
+		E:    event,
+		Args: args,
 	})
 }
 
-type packet struct {
-	transport Transport
-	namespace string
-	socket    string
-	event     string
-	args      [][]byte
-	decode    func([]byte, interface{}) error
+type inPacket struct {
+	N      string            `json:"namespace"`
+	S      string            `json:"socket"`
+	E      string            `json:"event"`
+	Args   []json.RawMessage `json:"args"`
+	decode func([]byte, interface{}) error
 }
 
-func (p *packet) Transport() Transport { return p.transport }
-func (p *packet) Namespace() string    { return p.namespace }
-func (p *packet) Socket() string       { return p.socket }
-func (p *packet) Event() string        { return p.event }
-func (p *packet) DecodeArgs(args ...interface{}) {
+type outPacket struct {
+	N    string        `json:"namespace"`
+	S    string        `json:"socket"`
+	E    string        `json:"event"`
+	Args []interface{} `json:"args"`
+}
+
+func (p *inPacket) Namespace() string { return p.N }
+func (p *inPacket) Socket() string    { return p.S }
+func (p *inPacket) Event() string     { return p.E }
+func (p *inPacket) DecodeArgs(args ...interface{}) {
 	for i, _ := range args {
-		if i >= len(p.args) {
+		if i >= len(p.Args) {
 			return
 		}
-		if err := p.decode(p.args[i], &args[i]); err != nil {
+		if err := p.decode(p.Args[i], &args[i]); err != nil {
 			return
 		}
 	}
-}
-
-type jsonInFrame struct {
-	Namespace string            `json:"namespace"`
-	Socket    string            `json:"socket"`
-	Event     string            `json:"event"`
-	Args      []json.RawMessage `json:"args"`
-}
-
-func (f *jsonInFrame) toPacket(t Transport) Packet {
-	args := make([][]byte, len(f.Args))
-	for i, jarg := range f.Args {
-		args[i] = jarg
-	}
-
-	return &packet{
-		transport: t,
-		namespace: f.Namespace,
-		socket:    f.Socket,
-		event:     f.Event,
-		args:      args,
-		decode:    json.Unmarshal,
-	}
-}
-
-type jsonOutFrame struct {
-	Namespace string        `json:"namespace"`
-	Socket    string        `json:"socket"`
-	Event     string        `json:"event"`
-	Args      []interface{} `json:"args"`
 }
