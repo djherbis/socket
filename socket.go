@@ -11,15 +11,12 @@ type Emitter interface {
 }
 
 type Socket interface {
-	Id() string
-	Namespace() string
+	ClientSocket
 	Join(string)
 	Leave(string)
 	Rooms() []string
 	To(string) Emitter
 	Request() *http.Request
-	EventHandler
-	Emitter
 }
 
 type socket struct {

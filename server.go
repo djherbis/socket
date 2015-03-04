@@ -37,7 +37,7 @@ func NewServer() *Server {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	t, err := newWSTransport(w, r)
+	t, err := newWSServer(w, r)
 	if err != nil {
 		return
 	}

@@ -2,7 +2,9 @@ package socket
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
@@ -35,7 +37,36 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func newWSTransport(w http.ResponseWriter, r *http.Request) (Transport, error) {
+func splitHostNamespace(url string) (host, ns string) {
+	res := strings.Split(url, "/")
+	switch len(res) {
+	case 0:
+		host, ns = "localhost", ""
+
+	case 1:
+		host, ns = res[0], ""
+
+	case 2:
+		host, ns = res[0], fmt.Sprintf("/%s", res[1])
+	}
+
+	return host, ns
+}
+
+func newWSClient(host string) (Transport, error) {
+	properUrl := fmt.Sprintf("ws://%s/socket", host)
+	c, r, err := websocket.DefaultDialer.Dial(properUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &wsTransport{
+		request: r.Request,
+		conn:    c,
+	}, nil
+}
+
+func newWSServer(w http.ResponseWriter, r *http.Request) (Transport, error) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return nil, err
