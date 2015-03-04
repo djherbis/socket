@@ -14,6 +14,12 @@
       socket.on("goodbye", function(msg){
         console.log(msg, ": goodbye")
       });
+
+      var socket = io("localhost/");
+      socket.emit("hey", ":)");
+      socket.on("hello", function(msg){
+        console.log("working", msg);
+      });
     </script>
   </body>
 </html>

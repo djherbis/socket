@@ -14,6 +14,14 @@ type Message struct {
 func main() {
 	server := socket.NewServer()
 
+	server.On(socket.Connection, func(so socket.Socket) {
+		so.Emit("hello", "world")
+		so.On("hey", func(msg string) {
+			fmt.Println("WORKING")
+			fmt.Println(msg)
+		})
+	})
+
 	server.Of("/views").On(socket.Connection, func(so socket.Socket) {
 		so.Join("group")
 		fmt.Println(so.Id(), "joined")
