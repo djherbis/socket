@@ -43,6 +43,7 @@ newSocket = function(ns, transport){
   socket.connect = function(){
     socket.emit = socket.emitNow;
     socket.emit("connection");
+    socket.handleEvent("connect", []);
     while(socket.pending.length > 0) {
       socket.pending.shift()();
     }
