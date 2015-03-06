@@ -21,11 +21,11 @@ type Socket interface {
 type socket struct {
 	mu sync.RWMutex
 	*clientSocket
-	ns    Namespace
+	ns    *namespace
 	rooms map[string]struct{}
 }
 
-func newSocket(ns Namespace, id string, t Transport) *socket {
+func newSocket(ns *namespace, id string, t Transport) *socket {
 	return &socket{
 		clientSocket: newClientSocket(id, ns.Name(), t),
 		ns:           ns,
@@ -37,14 +37,14 @@ func (s *socket) Join(room string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.rooms[room] = struct{}{}
-	s.ns.Join(room, s)
+	s.ns.rooms.Join(room, s)
 }
 
 func (s *socket) Leave(room string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.rooms, room)
-	s.ns.Leave(room, s)
+	s.ns.rooms.Leave(room, s)
 }
 
 func (s *socket) To(room string) Emitter {
@@ -65,12 +65,13 @@ func (s *socket) Rooms() (rooms []string) {
 }
 
 func (s *socket) disconnect() {
+	defer s.clientSocket.disconnect()
+
 	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	for room, _ := range s.rooms {
-		s.ns.Leave(room, s)
+		s.ns.rooms.Leave(room, s)
 		delete(s.rooms, room)
 	}
-	s.mu.RUnlock()
-
-	s.clientSocket.disconnect()
 }

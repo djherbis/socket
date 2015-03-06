@@ -10,8 +10,6 @@ var ErrNotSocketFunc = errors.New("connection/disconnection must take fn of type
 type Namespace interface {
 	Name() string
 	To(string) Emitter
-	Join(room string, so Socket)
-	Leave(room string, so Socket)
 	EventHandler
 	Emitter
 }
@@ -19,7 +17,7 @@ type Namespace interface {
 type namespace struct {
 	mu           sync.RWMutex
 	name         string
-	rooms        map[string]Room
+	rooms        *roomSet
 	onConnect    func(Socket)
 	onDisconnect func(Socket)
 	Handler
@@ -28,34 +26,15 @@ type namespace struct {
 func newNamespace(name string) *namespace {
 	return &namespace{
 		name:    name,
-		rooms:   make(map[string]Room),
+		rooms:   newRoomSet(),
 		Handler: newHandler(),
 	}
 }
 
 func (ns *namespace) Name() string { return ns.name }
 
-func (ns *namespace) Room(name string) Room {
-	ns.mu.Lock()
-	defer ns.mu.Unlock()
-	if room, ok := ns.rooms[name]; ok {
-		return room
-	}
-	room := newRoom(name)
-	ns.rooms[name] = room
-	return room
-}
-
-func (ns *namespace) Join(room string, so Socket) {
-	ns.Room(room).Join(so)
-}
-
-func (ns *namespace) Leave(room string, so Socket) {
-	ns.Room(room).Leave(so)
-}
-
 func (ns *namespace) To(room string) Emitter {
-	return ns.Room(room)
+	return ns.rooms.room(room)
 }
 
 func (ns *namespace) On(event string, fn interface{}) error {
@@ -90,7 +69,7 @@ func (ns *namespace) On(event string, fn interface{}) error {
 }
 
 func (ns *namespace) Emit(event string, args ...interface{}) error {
-	return ns.Room("").Emit(event, args...)
+	return ns.To("").Emit(event, args...)
 }
 
 func (ns *namespace) addSocket(so Socket) {
