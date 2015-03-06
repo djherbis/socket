@@ -45,10 +45,20 @@ func (r *room) Size() int {
 	return len(r.sockets)
 }
 
-func (r *room) Emit(event string, args ...interface{}) (err error) {
+func (r *room) getSockets() []Socket {
 	r.RLock()
 	defer r.RUnlock()
+	sockets := make([]Socket, len(r.sockets))
+	i := 0
 	for so, _ := range r.sockets {
+		sockets[i] = so
+		i++
+	}
+	return sockets
+}
+
+func (r *room) Emit(event string, args ...interface{}) (err error) {
+	for _, so := range r.getSockets() {
 		if er := so.Emit(event, args...); er != nil {
 			err = err
 		}
