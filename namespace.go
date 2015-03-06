@@ -7,13 +7,11 @@ import (
 
 var ErrNotSocketFunc = errors.New("connection/disconnection must take fn of type func(Socket)")
 
-type socketNamespace interface {
-	Name() string
-	Room(string) Room
-}
-
 type Namespace interface {
-	socketNamespace
+	Name() string
+	To(string) Emitter
+	Join(room string, so Socket)
+	Leave(room string, so Socket)
 	EventHandler
 	Emitter
 }
@@ -46,6 +44,18 @@ func (ns *namespace) Room(name string) Room {
 	room := newRoom(name)
 	ns.rooms[name] = room
 	return room
+}
+
+func (ns *namespace) Join(room string, so Socket) {
+	ns.Room(room).Join(so)
+}
+
+func (ns *namespace) Leave(room string, so Socket) {
+	ns.Room(room).Leave(so)
+}
+
+func (ns *namespace) To(room string) Emitter {
+	return ns.Room(room)
 }
 
 func (ns *namespace) On(event string, fn interface{}) error {
