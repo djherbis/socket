@@ -90,6 +90,7 @@ func (ns *namespace) removeSocket(so Socket) {
 	ns.mu.RUnlock()
 
 	if fn != nil {
+		ns.global.Leave(so)
 		fn(so)
 	}
 }
