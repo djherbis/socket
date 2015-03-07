@@ -16,7 +16,7 @@ type Namespace interface {
 
 type namespace struct {
 	mu           sync.RWMutex
-	name         string
+	global       Room
 	rooms        *roomSet
 	onConnect    func(Socket)
 	onDisconnect func(Socket)
@@ -25,13 +25,13 @@ type namespace struct {
 
 func newNamespace(name string) *namespace {
 	return &namespace{
-		name:    name,
+		global:  newRoom(name),
 		rooms:   newRoomSet(),
 		Handler: newHandler(),
 	}
 }
 
-func (ns *namespace) Name() string { return ns.name }
+func (ns *namespace) Name() string { return ns.global.Name() }
 
 func (ns *namespace) To(room string) Emitter {
 	return ns.rooms.room(room)
@@ -69,7 +69,7 @@ func (ns *namespace) On(event string, fn interface{}) error {
 }
 
 func (ns *namespace) Emit(event string, args ...interface{}) error {
-	return ns.To("").Emit(event, args...)
+	return ns.global.Emit(event, args...)
 }
 
 func (ns *namespace) addSocket(so Socket) {
@@ -78,7 +78,7 @@ func (ns *namespace) addSocket(so Socket) {
 	ns.mu.RUnlock()
 
 	if fn != nil {
-		so.Join("")
+		ns.global.Join(so)
 		so.Join(so.Id())
 		fn(so)
 	}
