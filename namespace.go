@@ -77,9 +77,10 @@ func (ns *namespace) addSocket(so Socket) {
 	fn := ns.onConnect
 	ns.mu.RUnlock()
 
+	ns.global.Join(so)
+	so.Join(so.Id())
+
 	if fn != nil {
-		ns.global.Join(so)
-		so.Join(so.Id())
 		fn(so)
 	}
 }
@@ -89,8 +90,9 @@ func (ns *namespace) removeSocket(so Socket) {
 	fn := ns.onDisconnect
 	ns.mu.RUnlock()
 
+	ns.global.Leave(so)
+
 	if fn != nil {
-		ns.global.Leave(so)
 		fn(so)
 	}
 }
