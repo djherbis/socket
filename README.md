@@ -1,5 +1,8 @@
-socket [![GoDoc](https://godoc.org/github.com/djherbis/socket?status.svg)](https://godoc.org/github.com/djherbis/socket)
+socket 
 ==========
+
+[![GoDoc](https://godoc.org/github.com/djherbis/socket?status.svg)](https://godoc.org/github.com/djherbis/socket)
+[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE.txt)
 
 Simple Socket.io alternative with #golang server
 
