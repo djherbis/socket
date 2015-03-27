@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -28,6 +29,7 @@ type Transport interface {
 }
 
 type wsTransport struct {
+	mu      sync.Mutex
 	request *http.Request
 	conn    *websocket.Conn
 }
@@ -95,6 +97,8 @@ func (ws *wsTransport) Close() error {
 }
 
 func (ws *wsTransport) Send(ns, socket, event string, args ...interface{}) error {
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	return ws.conn.WriteJSON(&outPacket{
 		N:    ns,
 		S:    socket,
