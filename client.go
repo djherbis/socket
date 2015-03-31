@@ -9,9 +9,15 @@ import (
 	"sync"
 )
 
+// ClientSocket creates a client-side Socket
 type ClientSocket interface {
+
+	// Id() is this sockets unique identifier
 	Id() string
+
+	// Namespace() is the namespace this socket is a part of
 	Namespace() string
+
 	EventHandler
 	Emitter
 }

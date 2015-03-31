@@ -2,14 +2,19 @@ package socket
 
 import "sync"
 
+// PacketHandler responds to a Packet
 type PacketHandler interface {
 	OnPacket(Packet)
 }
 
+// EventHandler registers a function to be run when an event is received.
+// The arguments to the function will be unmarshalled from the
+// javascript objects emitted by the client-side socket.
 type EventHandler interface {
-	On(string, interface{}) error
+	On(event string, fn interface{}) error
 }
 
+// Handler is both a PacketHandler and a EventHandler
 type Handler interface {
 	EventHandler
 	PacketHandler
