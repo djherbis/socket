@@ -6,6 +6,52 @@ socket
 
 Simple Socket.io alternative with #golang server
 
+Usage
+------------
+
+Server:
+
+```go
+package main
+
+import (
+  "fmt"
+  "net/http"
+
+  "github.com/djherbis/socket"
+)
+
+func main() {
+  server := socket.NewServer()
+
+  server.On(socket.Connection, func(so socket.Socket) {
+    so.Emit("hello", "world")
+
+    so.On("hey", func(msg string) {
+      fmt.Println(msg)
+    })
+  })
+
+  router := http.NewServeMux()
+  router.Handle("/socket", server)
+  router.Handle("/", http.FileServer(http.Dir("."))) // serve up socket.js
+  http.ListenAndServe("localhost:8080", router)
+}
+```
+
+Client:
+
+```html
+<script src="socket.js"></script>
+<script>
+  var socket = io("localhost:8080/");
+  socket.emit("hey", "hey there!");
+  socket.on("hello", function(msg){
+    console.log(msg);
+  });
+</script>
+```
+
 Installation
 ------------
 ```sh
