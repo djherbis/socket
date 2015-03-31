@@ -38,6 +38,8 @@ func main() {
     so.On("new obj", func(myobj MyObject){
       fmt.Println(myobj)
     })
+
+    so.Emit("server obj", MyObject{Text: "obj from server to client"})
   })
 
   router := http.NewServeMux()
@@ -53,11 +55,18 @@ Client:
 <script src="socket.js"></script>
 <script>
   var socket = io("localhost:8080/");
+  
   socket.emit("hey", "hey there!");
+  
   socket.on("hello", function(msg){
     console.log(msg);
   });
+  
   socket.emit("new obj", {text: "objects are automatically marshalled/unmarshalled"});
+
+  socket.on("server obj", function(myobj){
+    console.log(myobj);
+  });
 </script>
 ```
 
