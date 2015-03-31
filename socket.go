@@ -65,7 +65,7 @@ func (s *socket) Rooms() (rooms []string) {
 }
 
 func (s *socket) disconnect() {
-	defer s.clientSocket.disconnect()
+	s.clientSocket.disconnect()
 
 	s.mu.RLock()
 	defer s.mu.RUnlock()
