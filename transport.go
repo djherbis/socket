@@ -14,6 +14,8 @@ const Connection = "connection"
 const Disconnection = "disconnection"
 const Disconnect = "disconnect"
 
+// Packet is used to receive a sent event and decode the javascript
+// objects into a functions arguments
 type Packet interface {
 	Namespace() string
 	Socket() string
@@ -21,10 +23,11 @@ type Packet interface {
 	DecodeArgs(args ...interface{})
 }
 
+// Transport manages send and receiving Packets
 type Transport interface {
 	Request() *http.Request
 	NextPacket() (Packet, error)
-	Send(string, string, string, ...interface{}) error
+	Send(namespace, socketid, event string, args ...interface{}) error
 	Close() error
 }
 

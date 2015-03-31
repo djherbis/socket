@@ -7,10 +7,20 @@ import (
 
 var ErrNotSocketFunc = errors.New("connection/disconnection must take fn of type func(Socket)")
 
+// Namespace is used to multiplex a single Transport and allow
+// independent sockets within a single connection.
 type Namespace interface {
+
+	// Name returns this namespace's name
 	Name() string
-	To(string) Emitter
+
+	// To emits to a room
+	To(room string) Emitter
+
+	// On will register a function on an event
 	EventHandler
+
+	// Emit will broadcast to the namespace
 	Emitter
 }
 

@@ -5,11 +5,10 @@ import (
 	"sync"
 )
 
-// Emitter handles sending messages
+// Emitter handles sending messages.
+// Emit sends an event and args which will be handled by the func
+// registered via socket.on.
 type Emitter interface {
-
-	// Emit sends an event and args which will be handled by the func
-	// registered via socket.on.
 	Emit(event string, args ...interface{}) error
 }
 
