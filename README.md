@@ -21,6 +21,10 @@ import (
   "github.com/djherbis/socket"
 )
 
+type MyObject struct{
+  Text string `json:"text"`
+}
+
 func main() {
   server := socket.NewServer()
 
@@ -29,6 +33,10 @@ func main() {
 
     so.On("hey", func(msg string) {
       fmt.Println(msg)
+    })
+
+    so.On("new obj", func(myobj MyObject){
+      fmt.Println(myobj)
     })
   })
 
@@ -49,6 +57,7 @@ Client:
   socket.on("hello", function(msg){
     console.log(msg);
   });
+  socket.on("new obj", {text: "objects are automatically marshalled/unmarshalled"});
 </script>
 ```
 
