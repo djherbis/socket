@@ -2,11 +2,22 @@ package socket
 
 import "sync"
 
+// Room is a collection of Sockets
 type Room interface {
+
+	// Name returns the room name
 	Name() string
+
+	// Size returns the # of sockets in the room
 	Size() int
+
+	// Join adds a socket to the Room
 	Join(so Socket)
+
+	// Leave removes a socket from the Room
 	Leave(so Socket)
+
+	// Emit sends to all members of the room
 	Emitter
 }
 

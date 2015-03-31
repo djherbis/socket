@@ -18,7 +18,11 @@ type ClientSocket interface {
 	// Namespace() is the namespace this socket is a part of
 	Namespace() string
 
+	// On will register an function to handle events sent
+	// from the other end of the socket
 	EventHandler
+
+	// Emit will send an event to the other end of the socket
 	Emitter
 }
 

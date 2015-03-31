@@ -5,12 +5,15 @@ import (
 	"sync"
 )
 
+// Server handles creating Sockets from http connections
 type Server struct {
 	mu sync.RWMutex
 	*namespace
 	subspaces map[string]*namespace
 }
 
+// Of creates a new Namespace with "name", or returns the existing Namespace
+// with name "name"
 func (s *Server) Of(name string) Namespace {
 	return s.ns(name)
 }
@@ -26,6 +29,7 @@ func (s *Server) ns(name string) *namespace {
 	return subns
 }
 
+// NewServer creates a new Server
 func NewServer() *Server {
 	s := &Server{
 		namespace: newNamespace(""),
@@ -36,6 +40,7 @@ func NewServer() *Server {
 	return s
 }
 
+// ServeHttp handles http requests and converting them into Sockets
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t, err := newWSServer(w, r)
 	if err != nil {
