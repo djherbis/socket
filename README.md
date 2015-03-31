@@ -57,7 +57,7 @@ Client:
   socket.on("hello", function(msg){
     console.log(msg);
   });
-  socket.on("new obj", {text: "objects are automatically marshalled/unmarshalled"});
+  socket.emit("new obj", {text: "objects are automatically marshalled/unmarshalled"});
 </script>
 ```
 
