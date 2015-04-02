@@ -71,7 +71,7 @@ func New(url string) (ClientSocket, error) {
 		so.disconnect()
 	}()
 
-	return so, nil
+	return so, so.Emit(Connection)
 }
 
 func (s *clientSocket) Namespace() string {
