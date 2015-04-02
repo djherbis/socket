@@ -24,6 +24,9 @@ type ClientSocket interface {
 
 	// Emit will send an event to the other end of the socket
 	Emitter
+
+	// Close the underlying Transport
+	Close() error
 }
 
 type clientSocket struct {
