@@ -111,7 +111,7 @@ func (s *clientSocket) disconnect() {
 
 func generateId() (string, error) {
 	buf := bytes.NewBuffer(nil)
-	enc := base64.NewEncoder(base64.StdEncoding, buf)
+	enc := base64.NewEncoder(base64.URLEncoding, buf)
 	_, err := io.CopyN(enc, rand.Reader, 32)
 	if err != nil {
 		return "", err
