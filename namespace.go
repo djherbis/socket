@@ -88,7 +88,7 @@ func (ns *namespace) addSocket(so Socket) {
 	ns.mu.RUnlock()
 
 	ns.global.Join(so)
-	so.Join(so.Id())
+	so.Join(so.ID())
 
 	if fn != nil {
 		fn(so)

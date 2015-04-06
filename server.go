@@ -60,7 +60,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			so = newSocket(ns, p.Socket(), t)
 			ns.addSocket(so)
-			sockets[so.Id()] = so
+			sockets[so.ID()] = so
 		}
 
 		ns.OnPacket(p)

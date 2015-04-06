@@ -12,8 +12,8 @@ import (
 // ClientSocket creates a client-side Socket
 type ClientSocket interface {
 
-	// Id() is this sockets unique identifier
-	Id() string
+	// ID() is this sockets unique identifier
+	ID() string
 
 	// Namespace() is the namespace this socket is a part of
 	Namespace() string
@@ -47,10 +47,10 @@ func newClientSocket(id, ns string, t Transport) *clientSocket {
 	}
 }
 
-func (s *clientSocket) Id() string { return s.id }
+func (s *clientSocket) ID() string { return s.id }
 
 func New(url string) (ClientSocket, error) {
-	id, err := generateId()
+	id, err := generateID()
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (s *clientSocket) Namespace() string {
 }
 
 func (s *clientSocket) Emit(event string, args ...interface{}) error {
-	return s.Send(s.ns, s.Id(), event, args...)
+	return s.Send(s.ns, s.ID(), event, args...)
 }
 
 func (s *clientSocket) On(event string, fn interface{}) error {
@@ -112,7 +112,7 @@ func (s *clientSocket) disconnect() {
 	}
 }
 
-func generateId() (string, error) {
+func generateID() (string, error) {
 	buf := bytes.NewBuffer(nil)
 	enc := base64.NewEncoder(base64.URLEncoding, buf)
 	_, err := io.CopyN(enc, rand.Reader, 32)
