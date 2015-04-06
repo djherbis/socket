@@ -71,7 +71,7 @@ func (r *room) getSockets() []Socket {
 func (r *room) Emit(event string, args ...interface{}) (err error) {
 	for _, so := range r.getSockets() {
 		if er := so.Emit(event, args...); er != nil {
-			err = err
+			err = er
 		}
 	}
 	return err
