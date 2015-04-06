@@ -24,19 +24,19 @@ func main() {
 
 	server.Of("/views").On(socket.Connection, func(so socket.Socket) {
 		so.Join("group")
-		fmt.Println(so.Id(), "joined")
-		so.To("group").Emit("hello", so.Id())
+		fmt.Println(so.ID(), "joined")
+		so.To("group").Emit("hello", so.ID())
 		so.On("hey", func(msg string) {
-			fmt.Println(so.Id(), msg)
+			fmt.Println(so.ID(), msg)
 		})
 		so.On(socket.Disconnect, func() {
-			fmt.Println(so.Id(), "leaving")
+			fmt.Println(so.ID(), "leaving")
 		})
 	})
 
 	server.Of("/views").On(socket.Disconnection, func(so socket.Socket) {
-		fmt.Println(so.Id(), "left")
-		so.To("group").Emit("goodbye", so.Id())
+		fmt.Println(so.ID(), "left")
+		so.To("group").Emit("goodbye", so.ID())
 	})
 
 	go func() {

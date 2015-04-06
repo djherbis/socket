@@ -12,11 +12,11 @@ func main() {
 	server := socket.NewServer()
 
 	server.On(socket.Connection, func(so socket.Socket) {
-		log.Printf("localhost/hook/%s", so.Id())
+		log.Printf("localhost/hook/%s", so.ID())
 	})
 
 	server.On(socket.Disconnection, func(so socket.Socket) {
-		log.Println("left", so.Id())
+		log.Println("left", so.ID())
 	})
 
 	router := http.NewServeMux()
