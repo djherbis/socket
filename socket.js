@@ -1,6 +1,8 @@
+var cryptoObj = window.crypto || window.msCrypto; // for IE 11
+
 generateId = function(){
   var buf = new Uint8Array(32);
-  window.crypto.getRandomValues(buf);
+  cryptoObj.getRandomValues(buf);
   return btoa(String.fromCharCode.apply(null, buf));
 };
 
